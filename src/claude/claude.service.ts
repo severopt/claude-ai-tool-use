@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Tool, ToolUseBlock } from '@anthropic-ai/sdk/resources';
+import { ClaudeChat } from './claude-chat';
 
 export class ClaudeService {
   private readonly client: Anthropic;
@@ -19,28 +20,31 @@ export class ClaudeService {
   }
 
   async chat({
-    messages,
+    claudeChat,
     systemPrompt,
     tools = [],
     handleToolUse,
   }: {
+    claudeChat: ClaudeChat;
     systemPrompt: string;
-    messages: Anthropic.Messages.MessageParam[];
     tools?: Tool[];
     handleToolUse: (response: ToolUseBlock) => Promise<string | null>;
   }): Promise<Anthropic.Messages.Message | null> {
     try {
+      console.log('[ClaudeService] Generating AI response...');
       const aiResponse = await this.client.messages.create({
         system: systemPrompt,
         model: this.model,
         max_tokens: this.maxTokens,
         tools,
-        messages,
+        messages: claudeChat.messages,
       });
 
       // if the AI assistant is requesting tool use, then we should return with a proper response
       // and re-request a response from AI assistant
-      const toolUse = aiResponse.content.find((msg) => msg.type == 'tool_use');
+      const toolUse = aiResponse.content.find(
+        (msg) => msg.type === 'tool_use'
+      ) as ToolUseBlock | undefined;
       if (!toolUse) return aiResponse;
 
       // Add tool result message
@@ -48,12 +52,12 @@ export class ClaudeService {
       if (!toolResponse) return aiResponse;
 
       // Add tool use request message so that AI knows the chat history
-      messages.push({
+      claudeChat.addMessage({
         role: 'assistant',
         content: [toolUse],
       });
 
-      messages.push({
+      claudeChat.addMessage({
         role: 'user',
         content: [
           {
@@ -63,7 +67,7 @@ export class ClaudeService {
           },
         ],
       });
-      return this.chat({ messages, systemPrompt, tools, handleToolUse });
+      return this.chat({ claudeChat, systemPrompt, tools, handleToolUse });
     } catch (error) {
       console.error(`Error generating AI response: ${JSON.stringify(error)}`);
       return null;

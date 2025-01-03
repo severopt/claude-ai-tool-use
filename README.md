@@ -17,7 +17,7 @@ npm run start
 
 
 ## Instructions
-Full solution is available in `full-solution` branch.
+When you run the command, the tool will ask you to enter your input as "user message".
 
 1. Open `main.ts` file. Uncomment the first function call (`generateResponseWithCurrentTimeTool`)
   - You will see that this has no system prompt, and we are asking for the current time. Let's see how Claude AI responds to our request.

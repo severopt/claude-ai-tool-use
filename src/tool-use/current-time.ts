@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import readline from 'readline';
 import { Tool, ToolUseBlock, TextBlock } from '@anthropic-ai/sdk/resources';
 import { ClaudeChat } from '../claude/claude-chat';
 import {
@@ -7,6 +8,7 @@ import {
 } from '../claude/tools';
 import { ClaudeService } from '../claude/claude.service';
 import { getTimeByTimezone } from '../claude/current-time.service';
+import { askQuestion } from './util';
 
 async function handleToolUse(toolUse: ToolUseBlock): Promise<string> {
   const input = toolUse.input as { timezone: string };
@@ -23,38 +25,61 @@ async function handleToolUse(toolUse: ToolUseBlock): Promise<string> {
 const chatService = new ClaudeService();
 
 export async function generateResponseWithCurrentTimeTool({
-  userMessage,
   systemPrompt = '',
   useTools = false,
-  mockTimeResponse,
 }: {
   systemPrompt?: string;
-  userMessage: string;
   useTools?: boolean;
-  mockTimeResponse?: string;
 }) {
   // register your tools or leave it empty for testing your raw prompt without any tools
   const tools: Tool[] = useTools ? [CLAUDE_CURRENT_TIME_TOOL] : [];
 
-  const chat = new ClaudeChat({ prompt: systemPrompt, tools });
-
-  // always add your first message to initiate a response
-  chat.addMessage({
-    role: 'user',
-    content: userMessage,
+  const claudeChat = new ClaudeChat({ prompt: systemPrompt, tools });
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  rl.on('SIGINT', async () => {
+    console.log('\nReadline interface is terminating...');
+    rl.close();
+    process.exit(0);
   });
 
-  const response = await chatService.chat({
-    messages: chat.messages,
-    systemPrompt,
-    handleToolUse: mockTimeResponse
-      ? () => Promise.resolve(mockTimeResponse)
-      : handleToolUse,
-    tools,
-  });
+  while (true) {
+    const now = performance.now();
 
-  const message = (response?.content.find((msg) => msg.type === 'text') as TextBlock | undefined)?.text;
-  console.log('\n***\n\nClaude Response:');
-  console.log(message);
-  console.log('\n***\n');
+    console.log('\nUser Message:');
+    const line = await askQuestion(rl);
+
+    console.log('\nMock time? (empty if you want the AI to use real current time)');
+    const mockTimeResponse = await askQuestion(rl);
+
+    claudeChat.addMessage({
+      role: 'user',
+      content: line,
+    });
+
+    const response = await chatService.chat({
+      claudeChat,
+      systemPrompt,
+      handleToolUse: mockTimeResponse
+        ? () => Promise.resolve(mockTimeResponse)
+        : handleToolUse,
+      tools,
+    });
+
+    const message = (
+      response?.content.find((msg) => msg.type === 'text') as
+        | TextBlock
+        | undefined
+    )?.text;
+    console.log(
+      `\nIt took took ${((performance.now() - now) / 1000).toFixed(
+        2
+      )}s to receive the message.`
+    );
+    console.log('\nClaude Response:\n***\n');
+    console.log(message);
+    console.log('\n***\n');
+  }
 }

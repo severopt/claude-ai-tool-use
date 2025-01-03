@@ -10,7 +10,7 @@ export const CLAUDE_WEATHER_FORECAST_ERROR_MESSAGE =
 
 export const CLAUDE_WEATHER_FORECAST_TOOL: Tool = {
   name: 'getWeatherForecast',
-  // TODO: update below fields
+  // TODO: add tool definition here:
   description: '',
-  input_schema: {}
+  input_schema: {},
 };
