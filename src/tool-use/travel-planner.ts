@@ -31,17 +31,32 @@ async function handleToolUse(toolUse: ToolUseBlock): Promise<string | null> {
   // register tool use handle for 2 tools necessary for Travel Planning
   switch (toolUse.name) {
     case CLAUDE_WEATHER_FORECAST_TOOL.name:
-      // TODO: handle tool use for weather forecast and potential error
-      toolResponse = '';
+      try {
+        toolResponse = JSON.stringify(
+          await weatherService.getWeatherForecastByLocation(
+            toolUse.input as GetWeatherByLocationArguments
+          )
+        );
+      } catch (error) {
+        console.error(
+          `Error processing ${CLAUDE_WEATHER_FORECAST_TOOL.name} tool.`
+        );
+        toolResponse = CLAUDE_WEATHER_FORECAST_ERROR_MESSAGE;
+      }
       break;
     case CLAUDE_GENERATE_MAPS_URL_TOOL.name:
-      // TODO: handle tool use for maps url generation and potential error
-      toolResponse = '';
+      try {
+        toolResponse = generateGoogleMapsUrl(toolUse.input as TravelPlan);
+      } catch (error) {
+        console.error(
+          `Error processing ${CLAUDE_GENERATE_MAPS_URL_TOOL.name} tool.`
+        );
+        toolResponse = CLAUDE_GENERATE_MAPS_URL_ERROR_MESSAGE;
+      }
       break;
   }
   return toolResponse;
 }
-
 
 // you must provide apikey in the .env file before creating an instance of this service
 const chatService = new ClaudeService();
