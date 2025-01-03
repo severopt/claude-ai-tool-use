@@ -31,7 +31,7 @@ When you run the command, the tool will ask you to enter your input as "user mes
   - [AFTER THE SESSION] you can modify the tools and add current weather tool and play around it.
 4. Now we will be using a basic travel planner, but we are missing the tool configuration.
   - Go to `claude/tools/weather-forecast.ts` to update the missing tool definition. You can cheat from other tools.
-    - You will have to make sure that the `input_schema structure is inline with `weatherService.getWeatherForecastByLocation` function.
+    - You will have to make sure that the `input_schema` structure is inline with `weatherService.getWeatherForecastByLocation` function.
   - Go to `tool-use/travel-planner.ts` file and fill in the body for the function `handleToolUse` for the tool use.
   - Go to `claude/claude.service.ts` and see the implementation of `chat` method.
     - See the recursion when responding to the Claude AI with tool use
